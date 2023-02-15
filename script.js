@@ -1,45 +1,32 @@
 const display = document.querySelector('#display');
+const numberKeys = Array.from(document.querySelectorAll('.number'));
+const operatorKeys = Array.from(document.querySelectorAll('.operator'));
+const operateKey = document.querySelector('#operate');
+const clearKey = document.querySelector('#clear');
+const deleteKey = document.querySelector('#delete');
+const dotKey = document.querySelector('#dot');
+
 let operator = null;
 let num = null;
-let currentNum = 0;
+let currentNum = null;
 
-const numberKeys = Array.from(document.querySelectorAll('.number'));
+//#region EventListners
+
 numberKeys.forEach(numberKey => numberKey.addEventListener('click', () => addDigit(numberKey)));
 
-const operatorKeys = Array.from(document.querySelectorAll('.operator'));
-operatorKeys.forEach(operatorKey => operatorKey.addEventListener('click', () => {
-    if (currentNum !== null) {
-        if (operator) {
-            num = operate(operator, num, currentNum);
-        } else {
-            num = currentNum;
-        }
-        display.textContent = num;
-        currentNum = null;
-    }
-    setOperator(operatorKey);
-}));
-
-const operateKey = document.querySelector('#operate');
-operateKey.addEventListener('click', () => {
-    num = operate(operator, num, currentNum);
-    display.textContent = num;
-    currentNum = null;
-    operator = null;
-    num = null;
-    document.querySelector('.active-operator').classList.remove('active-operator');
-});
-
-const deleteKey = document.querySelector('#delete');
 deleteKey.addEventListener('click', () => deleteDigit());
 
-const clearKey = document.querySelector('#clear');
 clearKey.addEventListener('click', () => clearCalculator());
 
-const dotKey = document.querySelector('#dot');
 dotKey.addEventListener('click', () => addDot());
 
+operatorKeys.forEach(operatorKey => operatorKey.addEventListener('click', () => setOperator(operatorKey)));
 
+operateKey.addEventListener('click', () => operate());
+
+//#endregion
+
+//#region Basic operations' functions
 
 function add(num1, num2) {
     return num1 + num2;
@@ -57,9 +44,34 @@ function divide(num1, num2) {
     return num1 / num2;
 }
 
-function operate(operator, num1, num2) {
-    if (operator === window['divide'] && (num2 === 0)) {
-        alert('LMAO!!!!!!');
+//#endregion
+
+//#region Basic number input
+
+function addDot() {
+    if (currentNum === null) display.textContent = '';
+    if (display.textContent.includes('.')) return;
+    display.textContent += '.';
+    currentNum = +display.textContent;
+}
+
+function addDigit(numberKey) {
+    if (currentNum === null) display.textContent = '';
+    display.textContent += numberKey.value;    
+    currentNum = +display.textContent;
+}
+
+function deleteDigit() {
+    display.textContent = display.textContent.slice(0, -1);
+    currentNum = +display.textContent;
+}
+
+//#endregion
+
+function calculate(operator, num1, num2) {
+    const tryingToDivideByZero = operator === window['divide'] && (num2 === 0);
+    if (tryingToDivideByZero) {
+        alert('Stop messing around!');
         return 0;
     }
     return +operator(num1, num2).toFixed(7);
@@ -68,12 +80,13 @@ function operate(operator, num1, num2) {
 function clearCalculator() {
     operator = null;
     num = null;
-    currentNum = 0;
+    currentNum = null;
     display.textContent = '';
     document.querySelector('.active-operator').classList.remove('active-operator');
 }
 
 function setOperator(operatorKey) {
+    handlePreOperatorSelection();
     operator = window[operatorKey.id];
     if (document.querySelector('.active-operator')) {
         document.querySelector('.active-operator').classList.remove('active-operator');
@@ -81,19 +94,29 @@ function setOperator(operatorKey) {
     operatorKey.classList.add('active-operator');
 }
 
-function addDot() {
-    if (display.textContent.includes('.')) return;
-    display.textContent += '.';
-    currentNum = +display.textContent;
+function handlePreOperatorSelection() {
+    if (currentNum !== null) {
+        if (operator) {
+            num = calculate(operator, num, currentNum);
+        } else {
+            num = currentNum;
+        }
+        display.textContent = num;
+        currentNum = null;
+    }
 }
 
-function addDigit(numberKey) {
-    if (currentNum == null) display.textContent = '';
-    display.textContent += numberKey.value;    
-    currentNum = +display.textContent;
-}
-
-function deleteDigit() {
-    display.textContent = display.textContent.slice(0, -1);
-    currentNum = +display.textContent;
+function operate() {
+    if (operator === null) {
+        alert('Select an operator!');
+        return;
+    }
+    if (currentNum === null) {
+        alert('Give a second operand!');
+        return;
+    }
+    let result = calculate(operator, num, currentNum);
+    clearCalculator()
+    num = result;
+    display.textContent = result;
 }
